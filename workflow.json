@@ -1,0 +1,169 @@
+{
+    "name": "Apply to Job",
+    "nodes": [
+        {
+            "id": "1",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "apply-job",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "position": [
+                250,
+                250
+            ]
+        },
+        {
+            "id": "2",
+            "name": "Fetch Job from DB",
+            "type": "n8n-nodes-base.postgres",
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT * FROM jobs WHERE id={{$json[\"jobId\"]}}"
+            },
+            "position": [
+                500,
+                250
+            ]
+        },
+        {
+            "id": "3",
+            "name": "Generate Resume",
+            "type": "n8n-nodes-base.openAi",
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o-mini",
+                "operation": "chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are an expert resume writer. Generate a tailored resume in markdown format."
+                    },
+                    {
+                        "role": "user",
+                        "content": "Job: {{$json[\"description\"]}} \n\nUser Profile: {{$json[\"userProfile\"]}}"
+                    }
+                ]
+            },
+            "position": [
+                750,
+                250
+            ]
+        },
+        {
+            "id": "4",
+            "name": "Generate Cover Letter",
+            "type": "n8n-nodes-base.openAi",
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o-mini",
+                "operation": "chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a career coach. Write a personalized cover letter for the job."
+                    },
+                    {
+                        "role": "user",
+                        "content": "Job: {{$json[\"description\"]}} \n\nUser Profile: {{$json[\"userProfile\"]}}"
+                    }
+                ]
+            },
+            "position": [
+                1000,
+                250
+            ]
+        },
+        {
+            "id": "5",
+            "name": "Send Application Email",
+            "type": "n8n-nodes-base.emailSend",
+            "parameters": {
+                "toEmail": "{{$json[\"applyEmail\"]}}",
+                "subject": "Job Application - {{$json[\"title\"]}}",
+                "text": "Please find attached resume and cover letter.",
+                "attachments": [
+                    "{{$json[\"resumeFile\"]}}",
+                    "{{$json[\"coverLetterFile\"]}}"
+                ]
+            },
+            "position": [
+                1250,
+                250
+            ]
+        },
+        {
+            "id": "6",
+            "name": "Update DB Status",
+            "type": "n8n-nodes-base.postgres",
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE jobs SET status='applied' WHERE id={{$json[\"jobId\"]}}"
+            },
+            "position": [
+                1500,
+                250
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Job from DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Job from DB": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Resume",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Resume": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Cover Letter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Cover Letter": {
+            "main": [
+                [
+                    {
+                        "node": "Send Application Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Application Email": {
+            "main": [
+                [
+                    {
+                        "node": "Update DB Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
