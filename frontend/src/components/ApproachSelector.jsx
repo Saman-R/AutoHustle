@@ -1,33 +1,41 @@
-import { Upload, FileEdit } from "lucide-react";
+// Approach Selector Component
+import React from 'react';
+import { Upload, FileText } from 'lucide-react';
 
-function ApproachSelector({ setApproach }) {
+// Approach Selector Component
+const ApproachSelector = ({ onSelect }) => {
     return (
-        <div className="text-center">
-           
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-                <button
-                    onClick={() => setApproach("upload")}
-                    className="group flex flex-col items-center gap-6 p-8 rounded-2xl bg-white border border-gray-200 text-gray-800 font-medium shadow-lg hover:bg-gray-50 hover:shadow-xl hover:scale-105 transition-all duration-300"
-                >
-                    <Upload
-                        size={64}
-                        className="text-blue-600 group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <span className="text-xl">Upload Resume</span>
-                </button>
-                <button
-                    onClick={() => setApproach("form")}
-                    className="group flex flex-col items-center gap-6 p-8 rounded-2xl bg-white border border-gray-200 text-gray-800 font-medium shadow-lg hover:bg-gray-50 hover:shadow-xl hover:scale-105 transition-all duration-300"
-                >
-                    <FileEdit
-                        size={64}
-                        className="text-cyan-600 group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <span className="text-xl">Create New Resume</span>
-                </button>
+        <div className="grid md:grid-cols-2 gap-6">
+            <div
+                onClick={() => onSelect('upload')}
+                className="bg-white rounded-xl shadow-lg p-8 cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl border-2 border-transparent hover:border-indigo-500"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="bg-indigo-100 p-4 rounded-full mb-4">
+                        <Upload className="w-8 h-8 text-indigo-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Resume</h2>
+                    <p className="text-gray-600">
+                        Upload your existing resume and let AI enhance it
+                    </p>
+                </div>
+            </div>
+
+            <div
+                onClick={() => onSelect('form')}
+                className="bg-white rounded-xl shadow-lg p-8 cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl border-2 border-transparent hover:border-indigo-500"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="bg-green-100 p-4 rounded-full mb-4">
+                        <FileText className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Fill Form</h2>
+                    <p className="text-gray-600">
+                        Enter your information manually and generate a resume
+                    </p>
+                </div>
             </div>
         </div>
     );
-}
-
+};
 export default ApproachSelector;

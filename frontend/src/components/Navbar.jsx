@@ -1,3 +1,5 @@
+//Navbar.jsx
+
 import { Bot, LogOut, User, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -31,8 +33,8 @@ export default function Navbar({ user, setUser }) {
 
             {/* Desktop Links */}
             <div className="hidden md:flex items-center space-x-6">
-                <Link to="/" className="transition-colors transform hover:scale-105 text-gray-600 hover:text-gray-900">Home</Link>
-                <Link to="/portal" className="transition-colors transform hover:scale-105 text-gray-600 hover:text-gray-900">Jobs</Link>
+                <Link to="/dashboard" className="transition-colors transform hover:scale-105 text-gray-600 hover:text-gray-900">Dashboard</Link>
+                <Link to="/tracker" className="transition-colors transform hover:scale-105 text-gray-600 hover:text-gray-900">Tracker</Link>
                 
 
                 {user ? (
@@ -91,11 +93,11 @@ export default function Navbar({ user, setUser }) {
                             Home
                         </Link>
                         <Link
-                            to="/portal"
+                            to="/tracker"
                             className="block transition-colors py-2 text-gray-600 hover:text-gray-900"
                             onClick={closeMobileMenu}
                         >
-                            Jobs
+                            Tracker
                         </Link>
                         
 

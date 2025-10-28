@@ -1,3 +1,4 @@
+//signup.jsx
 import { useState } from "react";
 import { motion as Motion } from "framer-motion";
 import ModernBackground from "../components/ModernBackground";

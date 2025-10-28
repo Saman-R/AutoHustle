@@ -1,3 +1,5 @@
+# app.py
+from fastapi import FastAPI, Form, File, UploadFile
 from fastapi import (
     FastAPI,
     Depends,
@@ -8,12 +10,13 @@ from fastapi import (
     Query,
     status,
 )
-
+from chains import Chain
+from util import clean_text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from models import User
-from schemas import SignupSchema, LoginSchema, UserResponse
+from schemas import SignupSchema, LoginSchema, UserResponse, ResumeRequest, Education,Experience, PersonalInfo
 from utils.password_helper import hash_password, verify_password
 from db import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
@@ -129,66 +132,48 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
     }
 
 
-# @app.get("/api/me")
-# def get_me(current_user: User = Depends(get_current_user)):
-#     return {
-#         "id": current_user.id,
-#         "email": current_user.email,
-#         "name": current_user.name,
-#         "preferences": current_user.preferences,
-#         "resume": current_user.resume,
-#     }
-
-# from fastapi import FastAPI, Body
-# from pydantic import BaseModel
-# import subprocess
-# import json
-
-# app = FastAPI()
-
-# # Define request body schema
+chain = Chain()
 
 
-# class TailorRequest(BaseModel):
-#     resume: str
-#     job: str
+@app.post("/api/generate-resume")
+async def generate_resume(
+    job_description: str = Form(""),
+    profile_text: str = Form(""),
+    name: str = Form(""),
+    contact: str = Form(""),
+    resume_file: UploadFile = File(None)
+):
+    import PyPDF2
 
+    if resume_file:
+        if resume_file.content_type == "application/pdf":
+            pdf_reader = PyPDF2.PdfReader(resume_file.file)
+            profile_text = "\n".join([page.extract_text()
+                                    for page in pdf_reader.pages])
+        else:
+            profile_text = resume_file.file.read().decode("utf-8")
 
-# @app.post("/tailor-resume")
-# async def tailor_resume(data: TailorRequest):
-#     prompt = f"""
-#     You are an AI assistant that helps tailor resumes for job applications.
-    
-#     Job Description:
-#     {data.job}
+    resume_json = chain.generate_resume(job_description, profile_text)
+    personal_info = {
+        "name": name or resume_json.get("header", {}).get("title", "Your Name"),
+        "contact": contact or resume_json.get("header", {}).get("contact", "")
+    }
+    resume_html = chain.generate_resume_html(resume_json, personal_info)
+    cold_email = chain.generate_cold_email(job_description, profile_text)
 
-#     Base Resume:
-#     {data.resume}
+    return {
+        "resume_html": resume_html,
+        "cold_email": cold_email,
+        "resume_json": resume_json,
+        "personal_info": personal_info
+    }
 
-#     Task:
-#     1. Rewrite the resume to highlight skills and experience relevant to this job.
-#     2. Write a short personalized cover letter (max 250 words).
-    
-#     Respond in JSON format with keys: resume, cover_letter.
-#     """
-
-#     # Call ollama locally (example: using "llama2" model)
-#     result = subprocess.run(
-#         ["ollama", "run", "llama2"],
-#         input=prompt,
-#         text=True,
-#         capture_output=True
-#     )
-
-#     try:
-#         response_text = result.stdout.strip()
-#         # Try to parse AI response as JSON
-#         response_json = json.loads(response_text)
-#     except Exception:
-#         # Fallback if model doesn’t return pure JSON
-#         response_json = {
-#             "resume": "Tailored resume generated.",
-#             "cover_letter": "Cover letter generated."
-#         }
-
-#     return response_json
+@app.post("/api/generate-ats-resume")
+async def generate_ats_resume(data: dict):
+    try:
+        print("[DEBUG] Received ATS resume request.")
+        result_html = chain.generate_ats_resume(data)
+        return {"resume_html": result_html}
+    except Exception as e:
+        print("[ERROR] Failed to generate ATS resume:", e)
+        raise HTTPException(status_code=500, detail=str(e))

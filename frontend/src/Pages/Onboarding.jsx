@@ -20,11 +20,25 @@ function Onboarding() {
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("User Preferences:", form);
-        // TODO: send to backend
-        navigate("/userinfo"); // 👈 change this route
+        try {
+            const response = await fetch("http://localhost:8000/preferences", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(form),
+            });
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            // Optionally handle response here (success message, etc.)
+            navigate("/userinfo"); // Change this route as needed
+        } catch (error) {
+            console.error("Failed to submit preferences:", error);
+            // Optionally handle error (display message, etc.)
+        }
     };
 
     return (

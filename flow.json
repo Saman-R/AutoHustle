@@ -1,0 +1,292 @@
+{
+    "name": "Smart Apply PDFs - Google Drive Resume",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "apply-job",
+                "method": "POST",
+                "responseMode": "lastNode"
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "download",
+                "fileId": "YOUR_GOOGLE_DRIVE_FILE_ID",
+                "binaryPropertyName": "resumeBinary"
+            },
+            "name": "Download Resume from Drive",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-4",
+                "temperature": 0.7,
+                "top_p": 1,
+                "frequency_penalty": 0,
+                "presence_penalty": 0,
+                "stop": [],
+                "prompt": "You are a professional resume writer. Rewrite this resume to match the following job description:\n\nJob Description:\n{{$json[\"body\"][\"description\"]}}\n\nOriginal Resume Content:\n{{$binary[\"resumeBinary\"].data}}\n\nReturn as plain text or Markdown suitable for Google Docs."
+            },
+            "name": "Modify Resume (AI)",
+            "type": "n8n-nodes-base.openai",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-4",
+                "temperature": 0.7,
+                "top_p": 1,
+                "frequency_penalty": 0,
+                "presence_penalty": 0,
+                "stop": [],
+                "prompt": "You are a professional cover letter writer. Generate a cover letter for this job description:\n\n{{$json[\"body\"][\"description\"]}}\n\nUse key points from the modified resume:\n{{$json[\"choices\"][0][\"text\"]}}\n\nReturn as plain text or Markdown suitable for Google Docs."
+            },
+            "name": "Generate Cover Letter (AI)",
+            "type": "n8n-nodes-base.openai",
+            "typeVersion": 1,
+            "position": [
+                600,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "title": "Resume - {{$json[\"body\"][\"title\"]}}",
+                "content": "{{$json[\"choices\"][0][\"text\"]}}"
+            },
+            "name": "Create Resume Doc",
+            "type": "n8n-nodes-base.googleDocs",
+            "typeVersion": 1,
+            "position": [
+                800,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "title": "Cover Letter - {{$json[\"body\"][\"title\"]}}",
+                "content": "{{$json[\"choices\"][0][\"text\"]}}"
+            },
+            "name": "Create Cover Letter Doc",
+            "type": "n8n-nodes-base.googleDocs",
+            "typeVersion": 1,
+            "position": [
+                800,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "export",
+                "documentId": "={{$node[\"Create Resume Doc\"].json[\"documentId\"]}}",
+                "binaryPropertyName": "data",
+                "format": "pdf",
+                "options": {}
+            },
+            "name": "Export Resume PDF",
+            "type": "n8n-nodes-base.googleDocs",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "export",
+                "documentId": "={{$node[\"Create Cover Letter Doc\"].json[\"documentId\"]}}",
+                "binaryPropertyName": "data",
+                "format": "pdf",
+                "options": {}
+            },
+            "name": "Export Cover Letter PDF",
+            "type": "n8n-nodes-base.googleDocs",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upload",
+                "binaryPropertyName": "data",
+                "options": {},
+                "path": "/SmartApplyOutputs/"
+            },
+            "name": "Upload Resume PDF",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upload",
+                "binaryPropertyName": "data",
+                "options": {},
+                "path": "/SmartApplyOutputs/"
+            },
+            "name": "Upload Cover Letter PDF",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "responseBody": {
+                    "message": "Resume and cover letter PDFs generated!",
+                    "resume_pdf": "={{$node[\"Upload Resume PDF\"].json[\"webContentLink\"]}}",
+                    "cover_letter_pdf": "={{$node[\"Upload Cover Letter PDF\"].json[\"webContentLink\"]}}"
+                }
+            },
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.webhookResponse",
+            "typeVersion": 1,
+            "position": [
+                1400,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Download Resume from Drive",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download Resume from Drive": {
+            "main": [
+                [
+                    {
+                        "node": "Modify Resume (AI)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Cover Letter (AI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Modify Resume (AI)": {
+            "main": [
+                [
+                    {
+                        "node": "Create Resume Doc",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Cover Letter (AI)": {
+            "main": [
+                [
+                    {
+                        "node": "Create Cover Letter Doc",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Resume Doc": {
+            "main": [
+                [
+                    {
+                        "node": "Export Resume PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Cover Letter Doc": {
+            "main": [
+                [
+                    {
+                        "node": "Export Cover Letter PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Export Resume PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Upload Resume PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Export Cover Letter PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Upload Cover Letter PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Resume PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Cover Letter PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

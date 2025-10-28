@@ -5,17 +5,17 @@ import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
 import LandingPage from "./Pages/LandingPage";
-import JobPortal from "./components/JobPortal";
 import Login from "./Pages/Login";
 import Signup from "./Pages/SignUp";
-import UserInfo from "./Pages/UserInfo";
+import Info from "./Pages/Info";
 import Dashboard from "./Pages/Dashboard";
 import Onboarding from "./Pages/Onboarding";
+import JobTracker from "./Pages/JobTracker";
+import Profile from "./Pages/Profile";
 
 function App() {
   const [user, setUser] = useState(null);
 
-  // Load user from localStorage on first render
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -30,12 +30,12 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
-            <Route path="/portal" element={<JobPortal />} />
-          <Route path="/signup" element={<Signup setUser={setUser} />} />
-          <Route path="/onboarding" element={<Onboarding />} /> {/* ⬅️ add this */}
-            <Route path="/userinfo" element={<UserInfo />} />
+            <Route path="/signup" element={<Signup setUser={setUser} />} />
+            <Route path="/onboarding" element={<Onboarding />} /> {/* ⬅️ add this */}
+            <Route path="/info" element={<Info />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/tracker" element={<JobTracker />} />
           </Routes>
         </div>
 
