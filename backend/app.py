@@ -168,11 +168,12 @@ async def generate_resume(
         "personal_info": personal_info
     }
 
+
 @app.post("/api/generate-ats-resume")
-async def generate_ats_resume(data: dict):
+async def generate_ats_resume(data: ResumeRequest):
     try:
-        print("[DEBUG] Received ATS resume request.")
-        result_html = chain.generate_ats_resume(data)
+        print("[DEBUG] Received ATS resume request:", data.dict())
+        result_html = chain.generate_ats_resume(data.dict())
         return {"resume_html": result_html}
     except Exception as e:
         print("[ERROR] Failed to generate ATS resume:", e)

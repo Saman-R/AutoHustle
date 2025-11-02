@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Upload, FileText } from 'lucide-react';
+import { useSearchParams } from "react-router-dom";
 import ResumeUpload from '../components/ResumeUpload';
 import ResumeForm from '../components/ResumeForm';
 import ApproachSelector from '../components/ApproachSelector';
@@ -9,9 +10,17 @@ const Info = () => {
     const [selectedApproach, setSelectedApproach] = useState(null);
     const [file, setFile] = useState(null);
     const [dragOver, setDragOver] = useState(false);
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const approachFromURL = searchParams.get("approach");
+        if (approachFromURL === "form" || approachFromURL === "upload") {
+            setSelectedApproach(approachFromURL);
+        }
+    }, [searchParams]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-20">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 px-4 pt-20 pb-10">
             <div className="max-w-4xl mx-auto">
                 {!selectedApproach && (
                     <div className="text-center mb-8">

@@ -68,15 +68,15 @@ export default function LandingPage() {
 
             {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 py-20">
-                <div className="mb-12 animate-fade-in">
-                    <div className="inline-flex items-center px-6 py-3 backdrop-blur-sm rounded-full mb-8 shadow-lg border bg-white/80 border-slate-200/70 hover:bg-white/90 hover:border-blue-300/50 transition-all">
+                <div className="mb-8 animate-fade-in">
+                    <div className="inline-flex items-center px-6 py-3 backdrop-blur-sm rounded-full mb-3 shadow-lg border bg-white/80 border-slate-200/70 hover:bg-white/90 hover:border-blue-300/50 transition-all">
                         <Zap className="h-5 w-5 mr-3 text-blue-600" />
                         <span className="text-sm font-light tracking-wide text-slate-700">
                             THE FUTURE OF JOB APPLICATIONS
                         </span>
                     </div>
 
-                    <h3 className="text-4xl md:text-5xl lg:text-7xl font-light mb-8 tracking-tight leading-tight">
+                    <h3 className="text-4xl md:text-3xl lg:text-6xl font-light mb-8 tracking-tight leading-tight">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 block mb-2">
                             AI-POWERED
                         </span>
@@ -85,7 +85,7 @@ export default function LandingPage() {
                         </span>
                     </h3>
 
-                    <p className="text-base md:text-lg max-w-3xl mx-auto leading-relaxed px-4 text-slate-600 font-light">
+                    <p className="text-base md:text-lg max-w-3xl mx-auto leading-relaxed px-2 text-slate-600 font-light">
                         Boost your career with our AI tools. Generate personalized cold emails,
                         create professional resumes, and track all your job applications in one
                         smart, unified workspace.
@@ -93,7 +93,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Feature Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-12 px-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mb-8 px-2">
                     {[
                         {
                             icon: FileText,
@@ -168,7 +168,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* CTA */}
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-5">
                     <button
                         onClick={handleGetStarted}
                         className="group bg-gradient-to-r from-blue-500 to-purple-500 px-10 py-4 rounded-xl text-white font-light text-base tracking-wide hover:from-blue-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center justify-center shadow-xl hover:shadow-2xl"

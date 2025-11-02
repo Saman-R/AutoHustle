@@ -60,87 +60,131 @@ class Chain:
     # Resume Generation
     # ---------------------------
     def generate_resume(self, job_description, user_profile):
-        print("[DEBUG] Generating structured JSON resume...")
+        print("[DEBUG] Generating structured JSON resume (safe mode)...")
 
         prompt_resume = PromptTemplate.from_template("""
-        You are a professional resume generator.
-        Generate a concise, job-relevant resume as a strictly valid JSON object.
-        Do NOT include commentary, markdown, or code fences.
+        You are an expert resume parser and formatter.
+        Your task is to convert the given user's profile into a **structured JSON resume**.
 
-        ### JOB DESCRIPTION:
+        ⚠️ STRICT RULES:
+        - Use ONLY the information provided in USER PROFILE and JOB DESCRIPTION.
+        - DO NOT add or imagine new roles, companies, projects, or skills.
+        - DO NOT infer missing dates or invent achievements.
+        - If information is missing, omit that field or leave it as an empty string.
+        - Preserve original phrasing where possible.
+        - Maintain professional tone, no extra commentary or markdown.
+
+        ### INPUTS:
+        JOB DESCRIPTION:
         {job_description}
 
-        ### USER PROFILE:
+        USER PROFILE / EXISTING RESUME TEXT:
         {user_profile}
 
-        ### RULES:
-        - Include sections: "header", "summary", "skills", "experience", "projects", "education".
-        - Each section must be meaningful and relevant to the job.
-        - Do NOT use placeholders like "Not Applicable" or "N/A".
-        - If data is unavailable, simply omit that key or use an empty list.
-        - Limit "experience" to 3 entries, each with unique "role".
-        - Keep total JSON under 1500 words.
-
-        Example format:
+        ### OUTPUT FORMAT (STRICTLY VALID JSON):
         {{
-          "header": {{
-            "title": "Full Stack Developer",
-            "location": "Chennai, India",
-            "contact": "email@example.com",
-            "linkedin": "linkedin.com/in/example",
-            "github": "github.com/example"
-          }},
-          "summary": "Results-driven developer skilled in Python, React, and FastAPI.",
-          "skills": ["Python", "React", "FastAPI", "MongoDB", "Docker"],
-          "experience": [
+        "header": {{
+            "title": "",
+            "location": "",
+            "contact": "",
+            "linkedin": "",
+            "github": ""
+        }},
+        "summary": "",
+        "skills": [],
+        "experience": [
             {{
-              "role": "Software Intern",
-              "company": "Adobe",
-              "duration": "May 2025 - Aug 2025",
-              "points": [
-                "Built backend APIs using FastAPI and Uvicorn.",
-                "Collaborated with UI team for frontend integration."
-              ]
+            "role": "",
+            "company": "",
+            "duration": "",
+            "points": []
             }}
-          ],
-          "projects": [
+        ],
+        "projects": [
             {{
-              "name": "Interview Autopilot",
-              "description": "AI-based interview generator with React + FastAPI."
+            "name": "",
+            "description": ""
             }}
-          ],
-          "education": [
+        ],
+        "education": [
             {{
-              "degree": "MCA",
-              "institute": "SRM Institute of Science and Technology",
-              "year": "2024–Present"
+            "degree": "",
+            "institute": "",
+            "year": ""
             }}
-          ]
+        ]
         }}
+
+        Only return valid JSON — no extra text.
         """)
 
         try:
+            # ------------------------
+            # Generate structured resume JSON
+            # ------------------------
             chain_resume = prompt_resume | self.llm
             result = chain_resume.invoke({
                 "job_description": str(job_description),
                 "user_profile": str(user_profile)
             })
 
-            raw_output = result.content if hasattr(
-                result, "content") else str(result)
+            raw_output = result.content if hasattr(result, "content") else str(result)
             print("[DEBUG] Raw model output (first 300 chars):", raw_output[:300])
 
-            # Clean JSON
-            raw_output = raw_output.strip().removeprefix(
-                "```json").removesuffix("```").strip()
+            # Clean & sanitize
+            raw_output = raw_output.strip().removeprefix("```json").removesuffix("```").strip()
 
-            # Truncate runaway outputs
             if len(raw_output) > 10000:
                 print("[WARN] Output too long — truncating.")
                 raw_output = raw_output[:10000]
 
             resume_data = json.loads(raw_output)
             print("[DEBUG] JSON parsing successful.")
+
+            # ------------------------
+            # Generate automatic resume title
+            # ------------------------
+            try:
+                prompt_title = f"""
+                Based on the job description and the user's resume data below,
+                generate a short, professional title to identify this resume file.
+                Format examples:
+                - "Frontend Developer – Adobe"
+                - "Data Analyst – Deloitte"
+                - "HR Intern – Sleep.co"
+                
+                RULES:
+                - Include the job role and company name if available.
+                - Keep it under 6 words.
+                - Do not use quotes or markdown.
+
+                JOB DESCRIPTION:
+                {job_description}
+
+                RESUME DATA:
+                {json.dumps(resume_data)}
+                """
+
+                title_result = self.llm.invoke(prompt_title)
+                resume_title = title_result.content.strip().replace('"', '')
+
+                if not resume_title:
+                    # fallback if model output is blank
+                    exp = resume_data.get("experience", [{}])[0]
+                    role = exp.get("role") or resume_data.get("header", {}).get("title", "")
+                    company = exp.get("company", "")
+                    resume_title = f"{role} – {company}".strip(" –") or "Untitled Resume"
+
+            except Exception as te:
+                print("[WARN] Title generation failed:", te)
+                exp = resume_data.get("experience", [{}])[0]
+                role = exp.get("role") or resume_data.get("header", {}).get("title", "")
+                company = exp.get("company", "")
+                resume_title = f"{role} – {company}".strip(" –") or "Untitled Resume"
+
+            resume_data["generated_title"] = resume_title
+            print(f"[DEBUG] Auto-generated resume title: {resume_title}")
+
             return resume_data
 
         except json.JSONDecodeError as je:
@@ -153,8 +197,10 @@ class Chain:
                 "skills": [],
                 "experience": [],
                 "projects": [],
-                "education": []
+                "education": [],
+                "generated_title": "Untitled Resume"
             }
+
         except Exception as e:
             print("[ERROR] Resume generation failed:", e)
             raise
@@ -310,86 +356,226 @@ class Chain:
             print("[ERROR] Cold email generation failed:", e)
             raise
 
-# ---------------------------
-#Just resume generation
-# ---------------------------
-    # ---------------------------
-    # ATS-Friendly Resume Generation
-    # ---------------------------
 
     def generate_ats_resume(self, data: dict) -> str:
         """
-        Generate a clean, ATS-optimized HTML resume using provided structured data.
-        This uses the Groq LLM directly — no JSON formatting, just final HTML output.
+        Generate a clean, ATS-optimized HTML resume using structured data.
+        The AI enhances resume content (summary, skills, experience) and
+        returns a styled, consistent HTML structure.
         """
-        print("[DEBUG] Generating ATS-optimized resume...")
-
-        resume_prompt = ChatPromptTemplate.from_template("""
-        You are an expert professional resume writer specializing in ATS-optimized resumes.
-
-        ### Personal Information
-        Name: {name}
-        Email: {email}
-        LinkedIn: {linkedin}
-        GitHub: {github}
-
-        ### Job Description
-        {job_description}
-
-        ### Education
-        {education}
-
-        ### Experience
-        {experience}
-
-        ### Certifications
-        {certifications}
-
-        ### Soft Skills
-        {soft_skills}
-
-        ### Hard Skills
-        {hard_skills}
-
-        ---
-        **Instructions:**
-        - Create a concise, professional, and well-structured HTML resume.
-        - Focus on relevance to the job description.
-        - Avoid tables or images — use semantic `<section>` and `<ul>` tags.
-        - Ensure it is easy for ATS systems to parse.
-        - Return only valid HTML (no commentary, markdown, or explanations).
-        """)
+        print("[DEBUG] Generating enhanced ATS-optimized resume...")
 
         try:
-            education_text = "\n".join([
-                f"{e.get('degree', '')} at {e.get('institution', '')} ({e.get('year', '')})"
-                for e in data.get("education", [])
-            ])
-            experience_text = "\n".join([
-                f"{e.get('role', '')} at {e.get('company', '')} — {e.get('duration', '')}\n{e.get('description', '')}"
-                for e in data.get("experience", [])
-            ])
+            # === Extract Raw Data ===
+            personal_info = data.get("personal_info", {})
+            education = data.get("education", [])
+            experience = data.get("experience", [])
+            projects = data.get("projects", [])
+            certifications = data.get("certifications", [])
+            skills = data.get("skills", [])
+            job_description = data.get("job_description", "")
+            summary = data.get("summary", "")
 
-            chain = resume_prompt | self.llm
+            # === Ask LLM to Enhance Resume Content ===
+            enhancement_prompt = ChatPromptTemplate.from_template("""
+            You are a professional resume writer optimizing content for ATS systems.
 
-            result = chain.invoke({
-                "name": data["personal_info"].get("name", ""),
-                "email": data["personal_info"].get("email", ""),
-                "linkedin": data["personal_info"].get("linkedin", ""),
-                "github": data["personal_info"].get("github", ""),
-                "job_description": data.get("job_description", ""),
-                "education": education_text,
-                "experience": experience_text,
-                "certifications": ", ".join(data.get("certifications", [])),
-                "soft_skills": ", ".join(data.get("soft_skills", [])),
-                "hard_skills": ", ".join(data.get("hard_skills", [])),
+            Given the following resume data and job description,
+            enhance and rewrite the text to sound professional, concise,
+            and keyword-optimized for the target role.
+
+            Return only a valid JSON response in this exact structure:
+            {{
+            "summary": "...",
+            "experience": [{{"role": "...", "company": "...", "duration": "...", "points": ["..."]}}],
+            "projects": [{{"name": "...", "description": "..."}}],
+            "skills": ["..."],
+            "certifications": ["..."]
+            }}
+
+            ### Resume Data
+            {data}
+
+            ### Job Description
+            {job_description}
+            """)
+
+            chain = enhancement_prompt | self.llm
+
+            # Run the LLM and ensure a usable response
+            response = chain.invoke({
+                "data": json.dumps(data, ensure_ascii=False),
+                "job_description": job_description
             })
 
-            html_output = result.content if hasattr(
-                result, "content") else str(result)
-            print(
-                "[DEBUG] ATS resume generation successful (first 200 chars):", html_output[:200])
-            return html_output.strip()
+            # Handle different possible response formats
+            raw_output = ""
+            if hasattr(response, "content"):
+                raw_output = response.content.strip()
+            elif isinstance(response, dict) and "content" in response:
+                raw_output = response["content"].strip()
+            else:
+                raw_output = str(response).strip()
+
+            print("[DEBUG] Raw LLM Output (first 150 chars):", raw_output[:150])
+
+            # === Validate and Parse JSON ===
+            if not raw_output:
+                raise ValueError("Empty response from LLM")
+
+            # Try parsing JSON safely — strip markdown fences or extra text if needed
+            cleaned_output = raw_output
+            if cleaned_output.startswith("```"):
+                cleaned_output = cleaned_output.strip("`")
+                cleaned_output = cleaned_output.replace("json", "").strip()
+
+            try:
+                enhanced = json.loads(cleaned_output)
+            except json.JSONDecodeError:
+                print("[WARN] LLM returned invalid JSON, falling back to original data.")
+                enhanced = {}
+
+            # Merge enhanced data with originals
+            summary = enhanced.get("summary", summary)
+            experience = enhanced.get("experience", experience)
+            projects = enhanced.get("projects", projects)
+            skills = enhanced.get("skills", skills)
+            certifications = enhanced.get("certifications", certifications)
+
+            # === Generate HTML ===
+            html = f"""
+            <html>
+            <head>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', sans-serif;
+                        margin: 20px;
+                        color: #222;
+                        background-color: #f9f9f9;
+                    }}
+                    h1 {{
+                        color: #2563eb;
+                        margin-bottom: 5px;
+                    }}
+                    h2 {{
+                        color: #444;
+                        border-bottom: 1px solid #ccc;
+                        padding-bottom: 4px;
+                        margin-top: 25px;
+                    }}
+                    .header-info {{
+                        margin-bottom: 20px;
+                        font-size: 0.95rem;
+                        color: #555;
+                    }}
+                    .section {{
+                        margin-bottom: 15px;
+                    }}
+                    .skills {{
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 6px;
+                    }}
+                    .skill-chip {{
+                        background-color: #2563eb;
+                        color: #fff;
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 0.85rem;
+                    }}
+                    ul {{
+                        margin: 0;
+                        padding-left: 20px;
+                    }}
+                    .experience-item, .project-item {{
+                        margin-bottom: 12px;
+                    }}
+                    .experience-role {{
+                        font-weight: 600;
+                    }}
+                    .experience-company {{
+                        font-style: italic;
+                        color: #555;
+                    }}
+                    .project-name {{
+                        font-weight: 600;
+                    }}
+                    .education-item {{
+                        margin-bottom: 8px;
+                    }}
+                    .links {{
+                        margin-top: 6px;
+                        font-size: 0.9rem;
+                    }}
+                    .links a {{
+                        color: #2563eb;
+                        text-decoration: none;
+                        margin-right: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <h1>{personal_info.get('name', '')}</h1>
+                <div class="header-info">
+                    <div>{personal_info.get('email', '')}</div>
+                    <div>{personal_info.get('phone', '')}</div>
+                    <div class="links">
+                        {"".join(
+                            f'<a href="{personal_info.get(link, "")}" target="_blank">{link.capitalize()}</a>'
+                            for link in ['linkedin', 'github'] if personal_info.get(link)
+                        )}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Summary</h2>
+                    <p>{summary}</p>
+                </div>
+
+                <div class="section">
+                    <h2>Skills</h2>
+                    <div class="skills">
+                        {"".join(f'<span class="skill-chip">{s}</span>' for s in skills)}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Experience</h2>
+                    {"".join(f'<div class="experience-item">'
+                            f'<div class="experience-role">{exp.get("role", "")}</div>'
+                            f'<div class="experience-company">{exp.get("company", "")} | {exp.get("duration", "")}</div>'
+                            f'<ul>{"".join(f"<li>{p}</li>" for p in exp.get("points", []))}</ul>'
+                            f'</div>'
+                            for exp in experience)}
+                </div>
+
+                <div class="section">
+                    <h2>Projects</h2>
+                    {"".join(f'<div class="project-item"><div class="project-name">{p.get("name", "")}</div>'
+                            f'<p>{p.get("description", "")}</p></div>'
+                            for p in projects)}
+                </div>
+
+                <div class="section">
+                    <h2>Certifications</h2>
+                    <ul>
+                        {"".join(f"<li>{c}</li>" for c in certifications)}
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h2>Education</h2>
+                    {"".join(f'<div class="education-item">'
+                            f'<strong>{edu.get("degree", "")}</strong> - {edu.get("institution", edu.get("institute", ""))} ({edu.get("year", "")})'
+                            f'</div>'
+                            for edu in education)}
+                </div>
+            </body>
+            </html>
+            """
+
+            print("[DEBUG] Resume generated successfully.")
+            return html.strip()
 
         except Exception as e:
             print("[ERROR] ATS resume generation failed:", e)

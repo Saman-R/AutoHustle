@@ -4,8 +4,20 @@ const Profile = () => {
     const [resumeData, setResumeData] = useState(null);
 
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem('latestResume'));
-        setResumeData(data);
+        const allResumes = JSON.parse(localStorage.getItem('allResumes')) || [];
+        const loggedInEmail = localStorage.getItem('loggedInEmail');
+
+        if (!loggedInEmail) {
+            console.warn('No logged-in email found.');
+            return;
+        }
+
+        // find resume with same email
+        const matchedResume = allResumes.find(
+            (r) => r.personal_info.email.toLowerCase() === loggedInEmail.toLowerCase()
+        );
+
+        setResumeData(matchedResume || null);
     }, []);
 
     if (!resumeData) {
@@ -13,7 +25,7 @@ const Profile = () => {
             <div className="flex items-center justify-center min-h-screen bg-slate-50 text-slate-500">
                 <div className="text-center">
                     <div className="w-16 h-16 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p>No resume data found. Please fill the form first.</p>
+                    <p>No resume found for this account.</p>
                 </div>
             </div>
         );
@@ -57,95 +69,40 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* Education */}
-                <div className="group relative bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-indigo-400 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-100">
-                    <div className="absolute -top-px left-12 right-12 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <h2 className="text-xl font-light tracking-widest text-indigo-600 mb-6 flex items-center gap-3">
-                        <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                        EDUCATION
-                    </h2>
-                    <div className="space-y-6">
-                        {resumeData.education.map((edu, i) => (
-                            <div key={i} className="relative pl-6 border-l-2 border-slate-200 hover:border-indigo-400 transition-colors">
-                                <div className="absolute -left-1.5 top-2 w-3 h-3 rounded-full bg-white border-2 border-indigo-500"></div>
-                                <div className="space-y-1 text-sm">
-                                    <p className="text-slate-700 font-medium">{edu.institution}</p>
-                                    <p className="text-slate-600">{edu.degree}</p>
-                                    <p className="text-slate-400 font-mono text-xs">{edu.startMonth} {edu.startYear} - {edu.endMonth} {edu.endYear}</p>
-                                    <p className="text-indigo-600 text-xs">GRADE: {edu.grade}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Experience */}
-                <div className="group relative bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-emerald-400 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-100">
-                    <div className="absolute -top-px left-12 right-12 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <h2 className="text-xl font-light tracking-widest text-emerald-600 mb-6 flex items-center gap-3">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                        EXPERIENCE
-                    </h2>
-                    <div className="space-y-6">
-                        {resumeData.experience.map((exp, i) => (
-                            <div key={i} className="relative pl-6 border-l-2 border-slate-200 hover:border-emerald-400 transition-colors">
-                                <div className="absolute -left-1.5 top-2 w-3 h-3 rounded-full bg-white border-2 border-emerald-500"></div>
-                                <div className="space-y-1 text-sm">
-                                    <p className="text-slate-700 font-medium">{exp.company}</p>
-                                    <p className="text-emerald-600">{exp.position}</p>
-                                    <p className="text-slate-400 font-mono text-xs">{exp.startMonth} {exp.startYear} - {exp.endMonth} {exp.endYear}</p>
-                                    <p className="text-slate-600 mt-2">{exp.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Certifications */}
-                <div className="group relative bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-amber-400 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-amber-100">
-                    <div className="absolute -top-px left-12 right-12 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <h2 className="text-xl font-light tracking-widest text-amber-600 mb-6 flex items-center gap-3">
-                        <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                        CERTIFICATIONS
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {resumeData.certifications.map((c, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm text-slate-700">
-                                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                                {c}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Skills */}
-                <div className="group relative bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-purple-400 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-purple-100">
-                    <div className="absolute -top-px left-12 right-12 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <h2 className="text-xl font-light tracking-widest text-purple-600 mb-6 flex items-center gap-3">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                        SKILLS
-                    </h2>
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-xs text-slate-400 font-mono mb-2">SOFT SKILLS</p>
-                            <div className="flex flex-wrap gap-2">
-                                {resumeData.soft_skills.map((s, i) => (
-                                    <span key={i} className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-xs font-light tracking-wide hover:bg-blue-100 transition-colors">{s}</span>
-                                ))}
-                            </div>
+                <div className="flex justify-end gap-4 mb-4">
+                    {/* View Resume in New Tab */}
+                    <button
+                        onClick={() => {
+                            const newWindow = window.open("", "_blank");
+                            newWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${resumeData.personal_info.name}'s Resume</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 40px; background: #f9fafb; color: #1e293b; }
+                            .resume-container { max-width: 800px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+                            @media print {
+                                button { display: none; }
+                                body { background: white; }
+                                .resume-container { box-shadow: none; margin: 0; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="resume-container">
+                            ${resumeData.resume_html}
                         </div>
-                        <div>
-                            <p className="text-xs text-slate-400 font-mono mb-2">HARD SKILLS</p>
-                            <div className="flex flex-wrap gap-2">
-                                {resumeData.hard_skills.map((s, i) => (
-                                    <span key={i} className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-light tracking-wide hover:bg-emerald-100 transition-colors">{s}</span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    </body>
+                </html>
+            `);
+                            newWindow.document.close();
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition"
+                    >
+                        View Resume
+                    </button>
                 </div>
 
-                {/* AI Generated Resume */}
                 <div className="group relative bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-pink-400 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-pink-100">
                     <div className="absolute -top-px left-12 right-12 h-px bg-gradient-to-r from-transparent via-pink-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <h2 className="text-xl font-light tracking-widest text-pink-600 mb-6 flex items-center gap-3">

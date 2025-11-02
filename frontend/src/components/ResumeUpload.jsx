@@ -68,16 +68,24 @@ function ResumeUpload({ setApproach, file, setFile, dragOver, setDragOver }) {
 
             const result = await response.json();
 
+            // ✅ Correct localStorage save logic for Dashboard.jsx
+            const currentUserEmail = localStorage.getItem("userEmail"); // must be set during login
+
             const storedResumes = JSON.parse(localStorage.getItem("resumes") || "[]");
+
             storedResumes.push({
                 id: Date.now(),
+                userEmail: currentUserEmail,
                 timestamp: new Date().toLocaleString(),
                 resume_html: result.resume_html,
                 cold_email: result.cold_email,
                 resume_json: result.resume_json,
                 personal_info: result.personal_info,
             });
+
             localStorage.setItem("resumes", JSON.stringify(storedResumes));
+
+            console.log("[DEBUG] Resume saved for user:", currentUserEmail);
 
             alert("✅ Resume generated successfully!");
             navigate("/dashboard");
@@ -152,8 +160,8 @@ function ResumeUpload({ setApproach, file, setFile, dragOver, setDragOver }) {
                         onDragLeave={() => setDragOver(false)}
                         onDrop={handleDrop}
                         className={`block w-full min-h-[250px] p-8 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all duration-300 ${dragOver
-                            ? "border-blue-400 bg-blue-50 scale-[1.02]"
-                            : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
+                                ? "border-blue-400 bg-blue-50 scale-[1.02]"
+                                : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
                             }`}
                     >
                         <div className="flex flex-col items-center justify-center h-full gap-5">
@@ -188,8 +196,8 @@ function ResumeUpload({ setApproach, file, setFile, dragOver, setDragOver }) {
                                 onClick={handleUpload}
                                 disabled={isUploading}
                                 className={`px-8 py-3 rounded-2xl text-white font-semibold shadow-lg transition-all ${isUploading
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                                     }`}
                             >
                                 {isUploading ? "Generating..." : "Generate Resume"}

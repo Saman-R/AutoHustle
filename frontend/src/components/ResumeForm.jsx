@@ -14,6 +14,7 @@ const ResumeForm = ({ setApproach }) => {
         jobDescription: '',
         education: [{ institution: '', degree: '', startMonth: '', startYear: '', endMonth: '', endYear: '', grade: '' }],
         experience: [{ company: '', position: '', startMonth: '', startYear: '', endMonth: '', endYear: '', description: '' }],
+        projects: [{ name: '', description: '', startMonth: '', startYear: '', endMonth: '', endYear: '' }], // ✅ New
         certifications: [''],
         softSkills: [''],
         hardSkills: ['']
@@ -71,6 +72,7 @@ const ResumeForm = ({ setApproach }) => {
                 job_description: formData.jobDescription,
                 education: formData.education.filter(e => e.institution),
                 experience: formData.experience.filter(e => e.company),
+                projects: formData.projects.filter(p => p.name), // ✅ Include projects
                 certifications: formData.certifications.filter(c => c.trim()),
                 soft_skills: formData.softSkills.filter(s => s.trim()),
                 hard_skills: formData.hardSkills.filter(s => s.trim())
@@ -86,13 +88,14 @@ const ResumeForm = ({ setApproach }) => {
 
             const result = await response.json();
 
-            // Store the data
+            // ✅ Construct the full resume data object
             const resumeData = {
                 id: Date.now(),
                 timestamp: new Date().toLocaleString(),
                 personal_info: payload.personal_info,
                 education: payload.education,
                 experience: payload.experience,
+                projects: payload.projects, // ✅ Add this line
                 certifications: payload.certifications,
                 soft_skills: payload.soft_skills,
                 hard_skills: payload.hard_skills,
@@ -100,9 +103,23 @@ const ResumeForm = ({ setApproach }) => {
                 resume_html: result.resume_html
             };
 
+            // ✅ Retrieve any existing resumes
+            const existingResumes = JSON.parse(localStorage.getItem('allResumes')) || [];
+
+            // ✅ Add new resume
+            const updatedResumes = [...existingResumes, resumeData];
+
+            // ✅ Save back to localStorage
+            localStorage.setItem('allResumes', JSON.stringify(updatedResumes));
+
+            // ✅ Track the logged-in user's email (to identify resumes on profile page)
+            localStorage.setItem('loggedInEmail', payload.personal_info.email);
+
+            // Optional: keep the last generated resume separately (for quick preview)
             localStorage.setItem('latestResume', JSON.stringify(resumeData));
 
-            navigate('/profile'); // redirect to profile
+            // ✅ Navigate to profile page
+            navigate('/profile');
         } catch (error) {
             console.error('Error generating resume:', error);
             alert('Error generating resume. Please try again.');
@@ -110,6 +127,7 @@ const ResumeForm = ({ setApproach }) => {
             setIsSubmitting(false);
         }
     };
+
 
     return (
         <div className="relative max-w-5xl mx-auto">
@@ -399,6 +417,120 @@ const ResumeForm = ({ setApproach }) => {
                         ))}
                     </div>
                 </section>
+
+                {/* Projects */}
+                <section className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-100 rounded-lg">
+                                <Code className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-800">Projects</h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                addArrayItem('projects', { name: '', description: '', startMonth: '', startYear: '', endMonth: '', endYear: '' })
+                            }
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-md hover:shadow-lg"
+                        >
+                            <Plus className="w-4 h-4" /> Add Project
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {formData.projects.map((proj, i) => (
+                            <div
+                                key={i}
+                                className="p-5 border-2 border-gray-200 rounded-xl bg-gradient-to-br from-gray-50 to-white hover:border-purple-300 transition-all"
+                            >
+                                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Project Name"
+                                        value={proj.name}
+                                        onChange={(e) => handleArrayItemChange('projects', i, 'name', e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <textarea
+                                    placeholder="Describe your project, technologies used, and outcomes..."
+                                    value={proj.description}
+                                    onChange={(e) => handleArrayItemChange('projects', i, 'description', e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4"
+                                />
+
+                                <div className="grid grid-cols-2 gap-4 mb-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select
+                                                value={proj.startMonth}
+                                                onChange={(e) => handleArrayItemChange('projects', i, 'startMonth', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                <option value="">Month</option>
+                                                {months.map(month => (
+                                                    <option key={month} value={month}>{month}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={proj.startYear}
+                                                onChange={(e) => handleArrayItemChange('projects', i, 'startYear', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                <option value="">Year</option>
+                                                {years.map(year => (
+                                                    <option key={year} value={year}>{year}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date (or Present)</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select
+                                                value={proj.endMonth}
+                                                onChange={(e) => handleArrayItemChange('projects', i, 'endMonth', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            >
+                                                <option value="">Month</option>
+                                                <option value="Present">Present</option>
+                                                {months.map(month => (
+                                                    <option key={month} value={month}>{month}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={proj.endYear}
+                                                onChange={(e) => handleArrayItemChange('projects', i, 'endYear', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                disabled={proj.endMonth === 'Present'}
+                                            >
+                                                <option value="">Year</option>
+                                                {years.map(year => (
+                                                    <option key={year} value={year}>{year}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {formData.projects.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeArrayItem('projects', i)}
+                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium text-sm"
+                                    >
+                                        <Trash2 className="w-4 h-4" /> Remove
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
 
                 {/* Certifications */}
                 <section className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500">

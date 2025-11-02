@@ -37,7 +37,7 @@ function Signup({ setUser }) {
             const newUser = { name, email };
             localStorage.setItem("user", JSON.stringify(newUser));
             setUser?.(newUser);
-            setTimeout(() => navigate("/onboarding"), 1500);
+            setTimeout(() => navigate("/info?approach=form"), 1500);
         } catch (err) {
             toast.error(err.message || "Something went wrong");
         }
